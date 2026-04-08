@@ -1,0 +1,18 @@
+[project]
+name = "movie-analysis-agent"
+version = "0.1.0"
+description = "Multi-agent movie analysis: Collect → EDA → Hypothesize (Google ADK + TMDB + MovieLens)"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "google-adk[extensions]>=1.0.0",
+    "google-cloud-aiplatform>=1.40.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+    "pydantic>=2.0.0",
+    "duckdb>=1.0.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["analysis_agent*"]

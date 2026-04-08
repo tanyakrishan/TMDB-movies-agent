@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Movie Analysis Agent</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --red: #e50914;
+    --red-dim: rgba(229,9,20,0.15);
+    --gold: #ffc107;
+    --gold-dim: rgba(255,193,7,0.15);
+    --teal: #00bcd4;
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --surface2: #252525;
+    --border: #333;
+    --text: #f0f0f0;
+    --muted: #999;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Header ───────────────────────────────────── */
+  header {
+    width: 100%;
+    max-width: 960px;
+    padding: 28px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo {
+    width: 36px; height: 36px;
+    background: var(--red);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  header h1 { font-size: 22px; font-weight: 700; }
+
+  /* ── Main container ───────────────────────────── */
+  main { width: 100%; max-width: 960px; padding: 0 16px 32px; }
+
+  /* ── Example chips ────────────────────────────── */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip:hover {
+    border-color: var(--red);
+    color: var(--text);
+    background: var(--red-dim);
+  }
+
+  /* ── Chat area ────────────────────────────────── */
+  .chat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .messages {
+    padding: 16px;
+    max-height: 38vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--red);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.agent {
+    align-self: flex-start;
+    background: var(--surface2);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.agent ul { margin: 8px 0 0 18px; }
+  .msg.agent li { margin-bottom: 4px; }
+  .input-row {
+    display: flex;
+    border-top: 1px solid var(--border);
+  }
+  .input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+  }
+  .input-row input::placeholder { color: var(--muted); }
+  .input-row button {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    padding: 14px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: opacity 0.2s;
+  }
+  .input-row button:hover { opacity: 0.85; }
+  .input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Results ──────────────────────────────────── */
+  .results { display: none; }
+  .results.visible { display: block; }
+
+  .hypothesis-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .hypothesis-card h3 {
+    color: var(--gold);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .hypothesis-card p { font-size: 14px; line-height: 1.6; }
+  .hypothesis-card ul { margin: 12px 0 0 20px; font-size: 13px; color: var(--muted); }
+  .hypothesis-card li { margin-bottom: 6px; line-height: 1.5; }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: none;
+  }
+  .chart-card.visible { display: block; }
+  .chart-card.full-width { grid-column: 1 / -1; }
+  .chart-card h4 {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Loading ──────────────────────────────────── */
+  .loading-msg {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 12px;
+    display: none;
+  }
+  .loading-msg.visible { display: block; }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Responsive ───────────────────────────────── */
+  @media (max-width: 640px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-card.full-width { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎬</div>
+  <h1>Movie Analysis Agent</h1>
+</header>
+
+<main>
+  <!-- Example query chips -->
+  <div class="chips">
+    <div class="chip" onclick="askQuestion(this)">What makes a movie profitable?</div>
+    <div class="chip" onclick="askQuestion(this)">How have horror movies evolved over the past 20 years?</div>
+    <div class="chip" onclick="askQuestion(this)">What do the highest-rated films of the 2010s have in common?</div>
+    <div class="chip" onclick="askQuestion(this)">How does audience rating relate to box office revenue?</div>
+    <div class="chip" onclick="askQuestion(this)">What are the trends in trending movies this week?</div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-box">
+    <div class="messages" id="messages"></div>
+    <div class="loading-msg" id="loading">
+      <span class="spinner"></span>
+      Fetching movie data and running analysis… this usually takes 20-40 seconds.
+    </div>
+    <div class="input-row">
+      <input id="input" type="text" placeholder="Ask about movies…"
+             onkeydown="if(event.key==='Enter')send()" />
+      <button id="sendBtn" onclick="send()">Analyze</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="hypothesis-card" id="hypothesisCard">
+      <h3>Hypothesis</h3>
+      <div id="hypothesisContent"></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card" id="genreCard">
+        <h4>Top Genres</h4>
+        <canvas id="genreChart"></canvas>
+      </div>
+      <div class="chart-card" id="decadeCard">
+        <h4>Ratings by Decade</h4>
+        <canvas id="decadeChart"></canvas>
+      </div>
+      <div class="chart-card full-width" id="scatterCard">
+        <h4>Rating vs Year</h4>
+        <canvas id="scatterChart"></canvas>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let sessionId = null;
+const charts = {};
+
+function askQuestion(el) {
+  document.getElementById("input").value = el.textContent;
+  send();
+}
+
+async function send() {
+  const input = document.getElementById("input");
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = "";
+
+  // Show user message
+  addMessage(msg, "user");
+  setLoading(true);
+
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg, session_id: sessionId }),
+    });
+    const data = await res.json();
+    sessionId = data.session_id;
+
+    // Parse response into hypothesis paragraph + evidence bullets
+    const parsed = parseResponse(data.response);
+    addMessage(data.response, "agent");
+
+    // Show hypothesis card
+    if (parsed.hypothesis || parsed.bullets.length) {
+      showHypothesis(parsed);
+    }
+
+    // Render charts
+    if (data.chart_data) {
+      renderCharts(data.chart_data);
+    }
+  } catch (err) {
+    addMessage("Error: " + err.message, "agent");
+  } finally {
+    setLoading(false);
+  }
+}
+
+function addMessage(text, role) {
+  const container = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  if (role === "agent") {
+    div.innerHTML = formatMarkdown(text);
+  } else {
+    div.textContent = text;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function formatMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/^- (.+)$/gm, "<li>$1</li>")
+    .replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>")
+    .replace(/\n/g, "<br>");
+}
+
+function parseResponse(text) {
+  const lines = text.split("\n");
+  let hypothesis = "";
+  const bullets = [];
+  let inBullets = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
+      inBullets = true;
+      bullets.push(trimmed.replace(/^[-•]\s*/, ""));
+    } else if (!inBullets && trimmed && !trimmed.startsWith("#")) {
+      hypothesis += (hypothesis ? " " : "") + trimmed;
+    }
+  }
+  return { hypothesis, bullets };
+}
+
+function showHypothesis(parsed) {
+  const el = document.getElementById("hypothesisContent");
+  let html = `<p>${parsed.hypothesis}</p>`;
+  if (parsed.bullets.length) {
+    html += "<ul>" + parsed.bullets.map(b => `<li>${b}</li>`).join("") + "</ul>";
+  }
+  el.innerHTML = html;
+  document.getElementById("results").classList.add("visible");
+}
+
+function renderCharts(chartData) {
+  renderChart("genreChart", "genreCard", chartData.genre_chart);
+  renderChart("decadeChart", "decadeCard", chartData.decade_chart);
+  renderChart("scatterChart", "scatterCard", chartData.scatter_chart);
+}
+
+function renderChart(canvasId, cardId, spec) {
+  const card = document.getElementById(cardId);
+  if (!spec) { card.classList.remove("visible"); return; }
+  card.classList.add("visible");
+
+  // Destroy previous chart instance
+  if (charts[canvasId]) { charts[canvasId].destroy(); }
+
+  // Apply dark theme defaults
+  const opts = spec.options || {};
+  applyDarkTheme(opts);
+
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  charts[canvasId] = new Chart(ctx, {
+    type: spec.type,
+    data: spec.data,
+    options: opts,
+  });
+}
+
+function applyDarkTheme(opts) {
+  const tickColor = "#b3b3b3";
+  const gridColor = "rgba(255,255,255,0.06)";
+
+  if (opts.scales) {
+    for (const axis of Object.values(opts.scales)) {
+      axis.ticks = { ...axis.ticks, color: tickColor };
+      axis.grid = { ...axis.grid, color: gridColor };
+      if (axis.title) axis.title.color = tickColor;
+    }
+  }
+  if (opts.plugins && opts.plugins.legend) {
+    opts.plugins.legend.labels = { ...opts.plugins.legend.labels, color: tickColor };
+  }
+}
+
+function setLoading(on) {
+  document.getElementById("loading").classList.toggle("visible", on);
+  document.getElementById("sendBtn").disabled = on;
+}
+</script>
+
+</body>
+</html>
