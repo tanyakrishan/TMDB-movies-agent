@@ -1,323 +1,490 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Movie Analysis Agent</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ask Oscar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
-  :root {
-    --red: #e50914;
-    --red-dim: rgba(229,9,20,0.15);
-    --gold: #ffc107;
-    --gold-dim: rgba(255,193,7,0.15);
-    --teal: #00bcd4;
-    --bg: #0d0d0d;
-    --surface: #1a1a1a;
-    --surface2: #252525;
-    --border: #333;
-    --text: #f0f0f0;
-    --muted: #999;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --red:#b83227;--red-soft:#f9ecec;--red-mid:#d97060;
+  --cream:#fdf8f2;--cream2:#f2e8d9;--cream3:#e8d9c4;
+  --gold:#b8832a;--gold-bright:#f0c040;--gold-soft:#fdf3e0;--gold-line:#e0c98a;
+  --ink:#18120e;--muted:#7a6a5a;--faint:#c8b89a;
+}
+html,body{margin:0;padding:0;width:100%;font-family:'Inter',sans-serif;background:#000;}
+canvas#bg{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.page-wrap{position:relative;z-index:1;padding:0.5in 1in;width:100%;}
+.ticket{
+  width:100%;background:var(--cream);border-radius:18px;
+  border:1.5px solid rgba(240,192,64,0.5);
+  box-shadow:0 0 50px rgba(240,192,64,0.15),0 4px 60px rgba(0,0,0,0.8);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+.notch{width:30px;height:30px;border-radius:50%;background:#000;border:1.5px solid rgba(240,192,64,0.4);position:absolute;top:50%;transform:translateY(-50%);z-index:3;}
+.notch.l{left:-15px;}.notch.r{right:-15px;}
+.filmstrip{background:var(--ink);display:flex;align-items:center;padding:11px 26px;flex-shrink:0;}
+.film-holes{display:flex;gap:7px;align-items:center;flex-shrink:0;}
+.hole{width:12px;height:12px;border-radius:2px;background:var(--cream3);opacity:0.4;}
+.filmstrip-center{flex:1;display:flex;align-items:center;justify-content:center;gap:18px;}
+.filmstrip-title{font-family:'Inter',sans-serif;font-size:10px;letter-spacing:6px;color:#c8a870;text-transform:uppercase;font-weight:400;}
+.perf{height:18px;flex-shrink:0;background:repeating-linear-gradient(90deg,var(--cream2) 0,var(--cream2) 9px,transparent 9px,transparent 18px);}
+.perf.top{border-bottom:1.5px dashed var(--faint);}
+.perf.bot{border-top:1.5px dashed var(--faint);}
+.hero{padding:28px 56px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-shrink:0;}
+.hero-left{display:flex;flex-direction:column;gap:4px;}
+.invite-line{font-family:'Playfair Display',serif;font-style:italic;font-size:18px;color:var(--muted);font-weight:400;}
+.oscar-title{font-family:'Playfair Display',serif;font-size:52px;color:var(--ink);line-height:1;letter-spacing:-1px;font-weight:700;margin-top:2px;}
+.star-row{display:flex;gap:5px;margin-top:8px;}
+.star{width:11px;height:11px;background:var(--gold);clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+.hero-right{display:flex;flex-direction:row;align-items:center;gap:24px;}
+.badge{width:96px;height:96px;border-radius:50%;border:2px solid var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;flex-shrink:0;}
+.badge span{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase;color:var(--red);line-height:1.6;}
+.divider{margin:6px 56px 0;flex-shrink:0;display:flex;align-items:center;gap:14px;}
+.div-line{flex:1;height:1px;background:var(--faint);}
+.div-diamond{width:7px;height:7px;background:var(--gold);transform:rotate(45deg);flex-shrink:0;opacity:0.55;}
+.tri-strip{height:16px;margin:0 56px;flex-shrink:0;background:repeating-linear-gradient(60deg,rgba(184,50,39,0.06) 0,rgba(184,50,39,0.06) 7px,transparent 7px,transparent 14px),repeating-linear-gradient(-60deg,rgba(184,131,42,0.06) 0,rgba(184,131,42,0.06) 7px,transparent 7px,transparent 14px);}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:14px 56px 4px;justify-content:center;flex-shrink:0;}
+.chip{background:transparent;border:1px solid var(--red-mid);border-radius:20px;padding:6px 15px;font-size:13px;color:var(--red);cursor:pointer;font-family:'Playfair Display',serif;font-style:italic;transition:background 0.18s;}
+.chip:hover{background:var(--red-soft);}
+.chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.chat-area{padding:10px 56px 6px;display:flex;flex-direction:column;gap:8px;}
+.messages{display:flex;flex-direction:column;gap:10px;padding:2px 0 4px;min-height:120px;max-height:260px;overflow-y:auto;}
+.msg{max-width:88%;padding:11px 15px;border-radius:10px;font-size:13.5px;line-height:1.7;white-space:pre-wrap;}
+.msg.user{align-self:flex-end;background:var(--ink);color:var(--cream);border-bottom-right-radius:3px;font-family:'Inter',sans-serif;font-weight:400;}
+.msg.agent{align-self:center;width:100%;max-width:100%;background:var(--gold-soft);color:var(--ink);border:1px solid var(--gold-line);border-radius:10px;font-family:'Playfair Display',serif;font-size:13.5px;line-height:1.8;text-align:center;}
+.msg.agent ul{text-align:left;display:inline-block;margin:8px 0 0 18px;}
+.msg.agent li{margin-bottom:4px;}
+.msg.agent strong{color:var(--red);}
+.loading{font-size:15px;color:var(--muted);text-align:center;padding:4px;display:none;font-family:'Playfair Display',serif;font-style:italic;}
+.loading.on{display:block;}
+.dot{animation:blink 1.2s infinite;}
+.dot:nth-child(2){animation-delay:.2s;}
+.dot:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:0;}40%{opacity:1;}}
+.input-row{display:flex;border:1.5px solid var(--faint);border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fff;flex-shrink:0;}
+.input-row input{flex:1;background:transparent;border:none;padding:12px 15px;font-size:13px;color:var(--ink);outline:none;font-family:'Inter',sans-serif;font-weight:300;}
+.input-row input::placeholder{color:var(--muted);}
+.input-row input:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+.input-row button{background:var(--red);color:#fff;border:none;padding:12px 22px;font-weight:500;cursor:pointer;font-size:11px;letter-spacing:2px;font-family:'Inter',sans-serif;transition:opacity .18s;text-transform:uppercase;}
+.input-row button:hover{opacity:.85;}
+.input-row button:disabled{opacity:.4;cursor:not-allowed;}
+.input-row button:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.stub-line{margin:4px 0;border-top:2px dashed var(--faint);flex-shrink:0;}
+.stub{padding:14px 56px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;}
+.stub-fields{display:flex;flex-direction:column;gap:5px;}
+.stub-field{font-size:9.5px;color:var(--muted);letter-spacing:2.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px;font-family:'Courier Prime',monospace;}
+.stub-field span{display:inline-block;width:78px;border-bottom:1px solid var(--faint);height:10px;}
+.stub-right{display:flex;gap:18px;align-items:center;}
+.barcode{display:flex;gap:2px;align-items:flex-end;height:32px;}
+.bar{background:var(--ink);opacity:0.18;border-radius:1px;}
+.seat-info{font-size:9.5px;color:var(--muted);letter-spacing:1px;text-align:right;line-height:1.8;font-family:'Courier Prime',monospace;}
 
-  /* ── Header ───────────────────────────────────── */
-  header {
-    width: 100%;
-    max-width: 960px;
-    padding: 28px 16px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .logo {
-    width: 36px; height: 36px;
-    background: var(--red);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  header h1 { font-size: 22px; font-weight: 700; }
+/* ── Results (hypothesis + charts), themed to match ticket ── */
+.results{display:none;margin-top:24px;}
+.results.visible{display:block;}
+.hypothesis-card{
+  background:var(--cream);
+  border:1px solid var(--gold-line);
+  border-left:4px solid var(--gold);
+  border-radius:10px;
+  padding:22px 26px;
+  margin-bottom:18px;
+  box-shadow:0 4px 30px rgba(0,0,0,0.5);
+}
+.hypothesis-card h3{
+  font-family:'Playfair Display',serif;
+  font-weight:700;
+  font-style:italic;
+  color:var(--gold);
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:3px;
+  margin-bottom:12px;
+}
+.hypothesis-card p{
+  font-family:'Playfair Display',serif;
+  font-size:15px;
+  line-height:1.7;
+  color:var(--ink);
+}
+.hypothesis-card ul{
+  margin:14px 0 0 20px;
+  font-family:'Inter',sans-serif;
+  font-size:13px;
+  color:var(--muted);
+}
+.hypothesis-card li{margin-bottom:6px;line-height:1.55;}
+.charts-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.chart-card{
+  background:var(--cream);
+  border:1px solid var(--gold-line);
+  border-radius:10px;
+  padding:16px;
+  display:none;
+  box-shadow:0 4px 30px rgba(0,0,0,0.5);
+}
+.chart-card.visible{display:block;}
+.chart-card.full-width{grid-column:1 / -1;}
+.chart-card h4{
+  font-family:'Courier Prime',monospace;
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:12px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+}
+@media (max-width:640px){
+  .charts-grid{grid-template-columns:1fr;}
+  .chart-card.full-width{grid-column:1;}
+  .page-wrap{padding:0.3in 0.3in;}
+  .hero{padding:20px 20px 10px;}
+  .oscar-title{font-size:38px;}
+  .chips,.chat-area,.divider,.tri-strip,.stub{margin:0;padding-left:20px;padding-right:20px;}
+}
 
-  /* ── Main container ───────────────────────────── */
-  main { width: 100%; max-width: 960px; padding: 0 16px 32px; }
-
-  /* ── Example chips ────────────────────────────── */
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-  .chip {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 13px;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .chip:hover {
-    border-color: var(--red);
-    color: var(--text);
-    background: var(--red-dim);
-  }
-
-  /* ── Chat area ────────────────────────────────── */
-  .chat-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 24px;
-  }
-  .messages {
-    padding: 16px;
-    max-height: 38vh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .msg {
-    max-width: 85%;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-size: 14px;
-    line-height: 1.55;
-    white-space: pre-wrap;
-  }
-  .msg.user {
-    align-self: flex-end;
-    background: var(--red);
-    color: #fff;
-    border-bottom-right-radius: 4px;
-  }
-  .msg.agent {
-    align-self: flex-start;
-    background: var(--surface2);
-    border-bottom-left-radius: 4px;
-  }
-  .msg.agent ul { margin: 8px 0 0 18px; }
-  .msg.agent li { margin-bottom: 4px; }
-  .input-row {
-    display: flex;
-    border-top: 1px solid var(--border);
-  }
-  .input-row input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 14px 16px;
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-  }
-  .input-row input::placeholder { color: var(--muted); }
-  .input-row button {
-    background: var(--red);
-    color: #fff;
-    border: none;
-    padding: 14px 24px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 14px;
-    transition: opacity 0.2s;
-  }
-  .input-row button:hover { opacity: 0.85; }
-  .input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  /* ── Results ──────────────────────────────────── */
-  .results { display: none; }
-  .results.visible { display: block; }
-
-  .hypothesis-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--gold);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  .hypothesis-card h3 {
-    color: var(--gold);
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-  }
-  .hypothesis-card p { font-size: 14px; line-height: 1.6; }
-  .hypothesis-card ul { margin: 12px 0 0 20px; font-size: 13px; color: var(--muted); }
-  .hypothesis-card li { margin-bottom: 6px; line-height: 1.5; }
-
-  .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    display: none;
-  }
-  .chart-card.visible { display: block; }
-  .chart-card.full-width { grid-column: 1 / -1; }
-  .chart-card h4 {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  /* ── Loading ──────────────────────────────────── */
-  .loading-msg {
-    text-align: center;
-    color: var(--muted);
-    font-size: 13px;
-    padding: 12px;
-    display: none;
-  }
-  .loading-msg.visible { display: block; }
-  .spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid var(--border);
-    border-top-color: var(--red);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── Responsive ───────────────────────────────── */
-  @media (max-width: 640px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .chart-card.full-width { grid-column: 1; }
-  }
+/* ── Scroll hint: floats at bottom of viewport when results appear ── */
+.scroll-hint{
+  position:fixed;
+  bottom:28px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:10;
+  padding:11px 22px;
+  background:rgba(24,18,14,0.85);
+  border:1px solid var(--gold-line);
+  border-radius:30px;
+  color:var(--gold-bright);
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  font-size:15px;
+  cursor:pointer;
+  display:none;
+  gap:10px;
+  align-items:center;
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  box-shadow:0 6px 24px rgba(0,0,0,0.55),0 0 20px rgba(240,192,64,0.15);
+  transition:opacity 0.45s ease, transform 0.45s ease;
+  opacity:0;
+}
+.scroll-hint.visible{display:flex;animation:hint-bounce 1.8s ease-in-out infinite;opacity:1;}
+.scroll-hint.hide{opacity:0;transform:translate(-50%,14px);pointer-events:none;}
+.scroll-hint:hover{color:#fff;border-color:var(--gold-bright);}
+.scroll-hint .arrow{
+  display:inline-block;
+  font-size:13px;
+  letter-spacing:-2px;
+  font-family:'Inter',sans-serif;
+  font-style:normal;
+  font-weight:700;
+}
+@keyframes hint-bounce{
+  0%,100%{transform:translate(-50%,0);}
+  50%{transform:translate(-50%,-6px);}
+}
+/* Reserve space so the hint never covers the last line of the results */
+.results.visible{padding-bottom:80px;}
 </style>
 </head>
 <body>
-
-<header>
-  <div class="logo">🎬</div>
-  <h1>Movie Analysis Agent</h1>
-</header>
-
-<main>
-  <!-- Example query chips -->
+<canvas id="bg"></canvas>
+<div class="page-wrap">
+<div class="ticket">
+  <div class="notch l"></div><div class="notch r"></div>
+  <div class="filmstrip">
+    <div class="film-holes"><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div></div>
+    <div class="filmstrip-center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="opacity:.5"><circle cx="12" cy="12" r="10" stroke="#c8a870" stroke-width="1.3"/><circle cx="12" cy="12" r="3" fill="#c8a870"/><circle cx="12" cy="5" r="1.4" fill="#c8a870"/><circle cx="12" cy="19" r="1.4" fill="#c8a870"/><circle cx="5" cy="12" r="1.4" fill="#c8a870"/><circle cx="19" cy="12" r="1.4" fill="#c8a870"/><circle cx="7" cy="7" r="1.4" fill="#c8a870"/><circle cx="17" cy="17" r="1.4" fill="#c8a870"/><circle cx="17" cy="7" r="1.4" fill="#c8a870"/><circle cx="7" cy="17" r="1.4" fill="#c8a870"/></svg>
+      <div class="filmstrip-title">now showing</div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="opacity:.5"><circle cx="12" cy="12" r="10" stroke="#c8a870" stroke-width="1.3"/><circle cx="12" cy="12" r="3" fill="#c8a870"/><circle cx="12" cy="5" r="1.4" fill="#c8a870"/><circle cx="12" cy="19" r="1.4" fill="#c8a870"/><circle cx="5" cy="12" r="1.4" fill="#c8a870"/><circle cx="19" cy="12" r="1.4" fill="#c8a870"/><circle cx="7" cy="7" r="1.4" fill="#c8a870"/><circle cx="17" cy="17" r="1.4" fill="#c8a870"/><circle cx="17" cy="7" r="1.4" fill="#c8a870"/><circle cx="7" cy="17" r="1.4" fill="#c8a870"/></svg>
+    </div>
+    <div class="film-holes"><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div></div>
+  </div>
+  <div class="perf top"></div>
+  <div class="hero">
+    <div class="hero-left">
+      <div class="invite-line">you're invited to</div>
+      <div class="oscar-title">Ask Oscar</div>
+      <div class="star-row"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div>
+      <svg width="88" height="48" viewBox="0 0 80 44" fill="none" style="margin-top:16px;">
+        <rect x="0" y="8" width="48" height="32" rx="4" fill="#18120e"/>
+        <circle cx="22" cy="24" r="11" fill="#3a3028"/><circle cx="22" cy="24" r="7" fill="#524840"/><circle cx="22" cy="24" r="3.5" fill="#b8832a"/>
+        <rect x="16" y="3" width="13" height="8" rx="2" fill="#18120e"/>
+        <rect x="36" y="11" width="9" height="7" rx="2" fill="#3a3028"/>
+        <polygon points="50,14 80,2 80,44 50,30" fill="rgba(184,131,42,0.13)"/>
+        <line x1="50" y1="14" x2="80" y2="2" stroke="#b8832a" stroke-width="1" opacity="0.45"/>
+        <line x1="50" y1="30" x2="80" y2="44" stroke="#b8832a" stroke-width="1" opacity="0.45"/>
+        <line x1="51" y1="19" x2="79" y2="12" stroke="#b8832a" stroke-width="0.5" opacity="0.25"/>
+        <line x1="51" y1="23" x2="79" y2="24" stroke="#b8832a" stroke-width="0.5" opacity="0.25"/>
+        <line x1="51" y1="27" x2="79" y2="36" stroke="#b8832a" stroke-width="0.5" opacity="0.25"/>
+      </svg>
+    </div>
+    <div class="hero-right">
+      <svg width="90" height="90" viewBox="0 0 74 72" fill="none">
+        <rect x="2" y="18" width="70" height="52" rx="4" fill="#18120e"/>
+        <line x1="2" y1="32" x2="72" y2="32" stroke="#3a3028" stroke-width="1.5"/>
+        <line x1="2" y1="46" x2="72" y2="46" stroke="#3a3028" stroke-width="1.5"/>
+        <line x1="2" y1="60" x2="72" y2="60" stroke="#3a3028" stroke-width="1.5"/>
+        <line x1="24" y1="18" x2="24" y2="70" stroke="#3a3028" stroke-width="1.5"/>
+        <line x1="50" y1="18" x2="50" y2="70" stroke="#3a3028" stroke-width="1.5"/>
+        <text x="13" y="28" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6" fill="#c8a870" letter-spacing="0.5">PROD</text>
+        <text x="37" y="28" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6" fill="#c8a870" letter-spacing="0.5">SCENE</text>
+        <text x="61" y="28" text-anchor="middle" font-family="Courier Prime,monospace" font-size="6" fill="#c8a870" letter-spacing="0.5">TAKE</text>
+        <text x="13" y="43" text-anchor="middle" font-family="Courier Prime,monospace" font-size="8" fill="#fdf8f2">01</text>
+        <text x="37" y="43" text-anchor="middle" font-family="Courier Prime,monospace" font-size="8" fill="#fdf8f2">A</text>
+        <text x="61" y="43" text-anchor="middle" font-family="Courier Prime,monospace" font-size="8" fill="#fdf8f2">01</text>
+        <g transform="rotate(-8 2 18)">
+          <rect x="2" y="6" width="70" height="14" rx="3" fill="#18120e"/>
+          <rect x="12" y="6" width="10" height="14" fill="#fdf8f2"/>
+          <rect x="22" y="6" width="10" height="14" fill="#18120e"/>
+          <rect x="32" y="6" width="10" height="14" fill="#fdf8f2"/>
+          <rect x="42" y="6" width="10" height="14" fill="#18120e"/>
+          <rect x="52" y="6" width="10" height="14" fill="#fdf8f2"/>
+          <line x1="2" y1="20" x2="72" y2="20" stroke="#b8832a" stroke-width="1" opacity="0.5"/>
+        </g>
+      </svg>
+      <svg width="62" height="74" viewBox="0 0 46 56" fill="none">
+        <path d="M8 22 L12 52 L34 52 L38 22 Z" fill="#b83227"/>
+        <path d="M15 22 L13 52 L16 52 L18 22Z" fill="#fff" opacity="0.22"/>
+        <path d="M23 22 L23 52 L26 52 L26 22Z" fill="#fff" opacity="0.22"/>
+        <path d="M31 22 L33 52 L30 52 L28 22Z" fill="#fff" opacity="0.22"/>
+        <rect x="7" y="20" width="32" height="5" rx="2" fill="#8c2218"/>
+        <ellipse cx="12" cy="17" rx="6" ry="5" fill="#f5cba7"/><ellipse cx="23" cy="14" rx="7" ry="6" fill="#fdebd0"/><ellipse cx="34" cy="17" rx="6" ry="5" fill="#f5cba7"/>
+        <ellipse cx="17" cy="11" rx="5" ry="4.5" fill="#fdebd0"/><ellipse cx="29" cy="11" rx="5" ry="4.5" fill="#f5cba7"/><ellipse cx="23" cy="8" rx="4.5" ry="4" fill="#fdebd0"/>
+      </svg>
+      <div class="badge"><span>lights,<br>camera,<br>action!</span></div>
+    </div>
+  </div>
+  <div class="divider"><div class="div-line"></div><div class="div-diamond"></div><div class="div-line"></div></div>
+  <div class="tri-strip"></div>
   <div class="chips">
-    <div class="chip" onclick="askQuestion(this)">What makes a movie profitable?</div>
-    <div class="chip" onclick="askQuestion(this)">How have horror movies evolved over the past 20 years?</div>
-    <div class="chip" onclick="askQuestion(this)">What do the highest-rated films of the 2010s have in common?</div>
-    <div class="chip" onclick="askQuestion(this)">How does audience rating relate to box office revenue?</div>
-    <div class="chip" onclick="askQuestion(this)">What are the trends in trending movies this week?</div>
+    <div class="chip" role="button" tabindex="0" onclick="ask(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ask(this);}">What makes a film profitable?</div>
+    <div class="chip" role="button" tabindex="0" onclick="ask(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ask(this);}">How has horror evolved?</div>
+    <div class="chip" role="button" tabindex="0" onclick="ask(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ask(this);}">Hallmarks of the highest-rated 2010s films?</div>
+    <div class="chip" role="button" tabindex="0" onclick="ask(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ask(this);}">Rating vs box office revenue?</div>
+    <div class="chip" role="button" tabindex="0" onclick="ask(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ask(this);}">Trending this week?</div>
   </div>
-
-  <!-- Chat -->
-  <div class="chat-box">
-    <div class="messages" id="messages"></div>
-    <div class="loading-msg" id="loading">
-      <span class="spinner"></span>
-      Fetching movie data and running analysis… this usually takes 20-40 seconds.
+  <div class="chat-area">
+    <div class="messages" id="msgs">
+      <div class="msg agent">Roll up, roll up — I'm Oscar, your movie companion. Ask me anything about films, directors, box office, or trends.</div>
     </div>
+    <div class="loading" id="loading">Fetching movie data and running analysis… this usually takes 20-40 seconds<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
     <div class="input-row">
-      <input id="input" type="text" placeholder="Ask about movies…"
-             onkeydown="if(event.key==='Enter')send()" />
-      <button id="sendBtn" onclick="send()">Analyze</button>
+      <input id="inp" type="text" placeholder="Ask about a film, genre, director…" onkeydown="if(event.key==='Enter')send()"/>
+      <button id="btn" onclick="send()">Analyze</button>
     </div>
   </div>
+  <div class="stub-line"></div>
+  <div class="stub">
+    <div class="stub-fields">
+      <div class="stub-field">Movie: <span></span></div>
+      <div class="stub-field">Time: <span></span></div>
+      <div class="stub-field">Date: <span></span></div>
+    </div>
+    <div class="stub-right">
+      <div class="barcode" id="barcode"></div>
+      <div class="seat-info">Row A · Seat 1<br>General Admission</div>
+    </div>
+  </div>
+  <div class="perf bot"></div>
+</div>
 
-  <!-- Results -->
-  <div class="results" id="results">
-    <div class="hypothesis-card" id="hypothesisCard">
-      <h3>Hypothesis</h3>
-      <div id="hypothesisContent"></div>
+<!-- Results: hypothesis + Chart.js charts, rendered below the ticket -->
+<div class="results" id="results">
+  <div class="hypothesis-card" id="hypothesisCard">
+    <h3>Hypothesis</h3>
+    <div id="hypothesisContent"></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card" id="genreCard">
+      <h4>Top Genres</h4>
+      <canvas id="genreChart"></canvas>
     </div>
-    <div class="charts-grid">
-      <div class="chart-card" id="genreCard">
-        <h4>Top Genres</h4>
-        <canvas id="genreChart"></canvas>
-      </div>
-      <div class="chart-card" id="decadeCard">
-        <h4>Ratings by Decade</h4>
-        <canvas id="decadeChart"></canvas>
-      </div>
-      <div class="chart-card full-width" id="scatterCard">
-        <h4>Rating vs Year</h4>
-        <canvas id="scatterChart"></canvas>
-      </div>
+    <div class="chart-card" id="decadeCard">
+      <h4>Ratings by Decade</h4>
+      <canvas id="decadeChart"></canvas>
+    </div>
+    <div class="chart-card full-width" id="scatterCard">
+      <h4>Rating vs Year</h4>
+      <canvas id="scatterChart"></canvas>
     </div>
   </div>
-</main>
+</div>
+</div>
+
+<div class="scroll-hint" id="scrollHint" role="button" tabindex="0"
+     onclick="jumpToResults()"
+     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToResults();}"
+     aria-label="Scroll to analysis">
+  See the analysis <span class="arrow">↓↓</span>
+</div>
 
 <script>
+/* ── Background: animated Oscar statuettes on a black canvas ── */
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W, H, statuettes;
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+
+function makeStatuettes() {
+  statuettes = [];
+  const cols = 6, rows = 5;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      statuettes.push({
+        x: (c + 0.5) * (W / cols) + (Math.random() - 0.5) * 40,
+        y: (r + 0.5) * (H / rows) + (Math.random() - 0.5) * 30,
+        scale: 0.9 + Math.random() * 0.5,
+        alpha: 0.18 + Math.random() * 0.14,
+        rotation: (Math.random() - 0.5) * 0.18
+      });
+    }
+  }
+}
+
+function drawOscar(cx, cy, sc, alpha, rot) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(cx, cy);
+  ctx.rotate(rot);
+  ctx.scale(sc, sc);
+
+  const g = ctx.createLinearGradient(-12, -60, 8, 50);
+  g.addColorStop(0, '#f5d060');
+  g.addColorStop(0.35, '#c8922a');
+  g.addColorStop(0.7, '#e8b840');
+  g.addColorStop(1, '#8a5c10');
+  ctx.fillStyle = g;
+
+  // base block
+  ctx.beginPath();
+  ctx.roundRect(-15, 40, 30, 12, 3);
+  ctx.fill();
+
+  // pedestal taper
+  ctx.beginPath();
+  ctx.moveTo(-10, 28); ctx.lineTo(-15, 40); ctx.lineTo(15, 40); ctx.lineTo(10, 28);
+  ctx.closePath();
+  ctx.fill();
+
+  // column
+  ctx.beginPath();
+  ctx.roundRect(-6, 8, 12, 22, 2);
+  ctx.fill();
+
+  // torso
+  ctx.beginPath();
+  ctx.moveTo(-13, 8); ctx.bezierCurveTo(-13, 0, -9, -18, -7, -22);
+  ctx.lineTo(7, -22); ctx.bezierCurveTo(9, -18, 13, 0, 13, 8);
+  ctx.closePath();
+  ctx.fill();
+
+  // left arm
+  ctx.beginPath();
+  ctx.moveTo(-13, -2); ctx.quadraticCurveTo(-22, -16, -15, -30);
+  ctx.lineTo(-11, -27); ctx.quadraticCurveTo(-17, -15, -9, -4);
+  ctx.closePath();
+  ctx.fill();
+
+  // right arm
+  ctx.beginPath();
+  ctx.moveTo(13, -2); ctx.quadraticCurveTo(22, -16, 15, -30);
+  ctx.lineTo(11, -27); ctx.quadraticCurveTo(17, -15, 9, -4);
+  ctx.closePath();
+  ctx.fill();
+
+  // head
+  ctx.beginPath();
+  ctx.ellipse(0, -32, 9, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // subtle highlight
+  ctx.globalAlpha = alpha * 0.25;
+  ctx.fillStyle = '#fff8e0';
+  ctx.beginPath();
+  ctx.ellipse(-3, -35, 3, 5, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawBg() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, W, H);
+  for (const s of statuettes) {
+    drawOscar(s.x, s.y, s.scale, s.alpha, s.rotation);
+  }
+  ctx.globalAlpha = 1;
+}
+
+resize(); makeStatuettes(); drawBg();
+window.addEventListener('resize', () => { resize(); makeStatuettes(); drawBg(); });
+
+/* ── Barcode decoration ── */
+const bars = document.getElementById('barcode');
+[2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,2,1,2,3,1,2,1].forEach(w => {
+  const b = document.createElement('div'); b.className = 'bar';
+  b.style.cssText = `width:${w}px;height:${18+Math.random()*14}px;`;
+  bars.appendChild(b);
+});
+
+/* ── Chat + analysis wiring (calls FastAPI /chat) ── */
 let sessionId = null;
 const charts = {};
 
-function askQuestion(el) {
-  document.getElementById("input").value = el.textContent;
+function ask(el) {
+  document.getElementById('inp').value = el.textContent;
   send();
 }
 
 async function send() {
-  const input = document.getElementById("input");
-  const msg = input.value.trim();
+  const inp = document.getElementById('inp');
+  const msg = inp.value.trim();
   if (!msg) return;
-  input.value = "";
-
-  // Show user message
-  addMessage(msg, "user");
-  setLoading(true);
+  inp.value = '';
+  addMsg(msg, 'user');
+  setLoad(true);
 
   try {
-    const res = await fetch("/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: msg, session_id: sessionId }),
     });
     const data = await res.json();
     sessionId = data.session_id;
 
-    // Parse response into hypothesis paragraph + evidence bullets
     const parsed = parseResponse(data.response);
-    addMessage(data.response, "agent");
+    addMsg(data.response, 'agent');
 
-    // Show hypothesis card
     if (parsed.hypothesis || parsed.bullets.length) {
       showHypothesis(parsed);
     }
-
-    // Render charts
     if (data.chart_data) {
       renderCharts(data.chart_data);
     }
   } catch (err) {
-    addMessage("Error: " + err.message, "agent");
+    addMsg('Error: ' + err.message, 'agent');
   } finally {
-    setLoading(false);
+    setLoad(false);
   }
 }
 
-function addMessage(text, role) {
-  const container = document.getElementById("messages");
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  if (role === "agent") {
+function addMsg(text, role) {
+  const container = document.getElementById('msgs');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'agent') {
     div.innerHTML = formatMarkdown(text);
   } else {
     div.textContent = text;
@@ -328,59 +495,101 @@ function addMessage(text, role) {
 
 function formatMarkdown(text) {
   return text
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/^- (.+)$/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>")
-    .replace(/\n/g, "<br>");
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/\n/g, '<br>');
 }
 
 function parseResponse(text) {
-  const lines = text.split("\n");
-  let hypothesis = "";
+  const lines = text.split('\n');
+  let hypothesis = '';
   const bullets = [];
   let inBullets = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
+    if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
       inBullets = true;
-      bullets.push(trimmed.replace(/^[-•]\s*/, ""));
-    } else if (!inBullets && trimmed && !trimmed.startsWith("#")) {
-      hypothesis += (hypothesis ? " " : "") + trimmed;
+      bullets.push(trimmed.replace(/^[-•]\s*/, '').replace(/\*\*/g, ''));
+    } else if (!inBullets && trimmed && !trimmed.startsWith('#')) {
+      hypothesis += (hypothesis ? ' ' : '') + trimmed;
     }
   }
-  return { hypothesis, bullets };
+  return { hypothesis: hypothesis.replace(/\*\*/g, ''), bullets };
 }
 
 function showHypothesis(parsed) {
-  const el = document.getElementById("hypothesisContent");
+  const el = document.getElementById('hypothesisContent');
   let html = `<p>${parsed.hypothesis}</p>`;
   if (parsed.bullets.length) {
-    html += "<ul>" + parsed.bullets.map(b => `<li>${b}</li>`).join("") + "</ul>";
+    html += '<ul>' + parsed.bullets.map(b => `<li>${b}</li>`).join('') + '</ul>';
   }
   el.innerHTML = html;
-  document.getElementById("results").classList.add("visible");
+  document.getElementById('results').classList.add('visible');
+  revealScrollHint();
+}
+
+/* ── Scroll hint: nudges the user past the ticket bottom to the analysis ── */
+let _hintObserver = null;
+function revealScrollHint() {
+  const hint = document.getElementById('scrollHint');
+  const results = document.getElementById('results');
+  if (!hint || !results) return;
+
+  // If results are already in view (tall viewports), skip the nudge.
+  const rect = results.getBoundingClientRect();
+  if (rect.top < window.innerHeight * 0.85) return;
+
+  hint.classList.remove('hide');
+  hint.classList.add('visible');
+
+  // Auto-hide once the results actually enter the viewport.
+  if (_hintObserver) _hintObserver.disconnect();
+  _hintObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        hideScrollHint();
+        _hintObserver.disconnect();
+        _hintObserver = null;
+        break;
+      }
+    }
+  }, { threshold: 0.15 });
+  _hintObserver.observe(results);
+}
+
+function hideScrollHint() {
+  const hint = document.getElementById('scrollHint');
+  if (!hint) return;
+  hint.classList.add('hide');
+  hint.classList.remove('visible');
+}
+
+function jumpToResults() {
+  const results = document.getElementById('results');
+  if (!results) return;
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  hideScrollHint();
 }
 
 function renderCharts(chartData) {
-  renderChart("genreChart", "genreCard", chartData.genre_chart);
-  renderChart("decadeChart", "decadeCard", chartData.decade_chart);
-  renderChart("scatterChart", "scatterCard", chartData.scatter_chart);
+  renderChart('genreChart', 'genreCard', chartData.genre_chart);
+  renderChart('decadeChart', 'decadeCard', chartData.decade_chart);
+  renderChart('scatterChart', 'scatterCard', chartData.scatter_chart);
 }
 
 function renderChart(canvasId, cardId, spec) {
   const card = document.getElementById(cardId);
-  if (!spec) { card.classList.remove("visible"); return; }
-  card.classList.add("visible");
+  if (!spec) { card.classList.remove('visible'); return; }
+  card.classList.add('visible');
 
-  // Destroy previous chart instance
   if (charts[canvasId]) { charts[canvasId].destroy(); }
 
-  // Apply dark theme defaults
   const opts = spec.options || {};
-  applyDarkTheme(opts);
+  applyTicketTheme(opts);
 
-  const ctx = document.getElementById(canvasId).getContext("2d");
+  const ctx = document.getElementById(canvasId).getContext('2d');
   charts[canvasId] = new Chart(ctx, {
     type: spec.type,
     data: spec.data,
@@ -388,27 +597,27 @@ function renderChart(canvasId, cardId, spec) {
   });
 }
 
-function applyDarkTheme(opts) {
-  const tickColor = "#b3b3b3";
-  const gridColor = "rgba(255,255,255,0.06)";
+function applyTicketTheme(opts) {
+  const tickColor = '#7a6a5a';
+  const gridColor = 'rgba(24,18,14,0.08)';
+  const labelColor = '#18120e';
 
   if (opts.scales) {
     for (const axis of Object.values(opts.scales)) {
       axis.ticks = { ...axis.ticks, color: tickColor };
       axis.grid = { ...axis.grid, color: gridColor };
-      if (axis.title) axis.title.color = tickColor;
+      if (axis.title) axis.title.color = labelColor;
     }
   }
   if (opts.plugins && opts.plugins.legend) {
-    opts.plugins.legend.labels = { ...opts.plugins.legend.labels, color: tickColor };
+    opts.plugins.legend.labels = { ...opts.plugins.legend.labels, color: labelColor };
   }
 }
 
-function setLoading(on) {
-  document.getElementById("loading").classList.toggle("visible", on);
-  document.getElementById("sendBtn").disabled = on;
+function setLoad(on) {
+  document.getElementById('loading').classList.toggle('on', on);
+  document.getElementById('btn').disabled = on;
 }
 </script>
-
 </body>
 </html>
