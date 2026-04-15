@@ -1,14 +1,16 @@
 steps:
-- name: 'gcr.io/cloud-builders/docker'
-args: ['build', '-t', 'gcr.io/augmented-atom-487000-j1/tmdb-movies-agent-git', '.']
-- name: 'gcr.io/cloud-builders/docker'
-args: ['push', 'gcr.io/augmented-atom-487000-j1/tmdb-movies-agent-git']
-- name: 'gcr.io/cloud-builders/gcloud'
-args:
-- 'run'
-- 'deploy'
-- 'my-app'
-- '--image=gcr.io/augmented-atom-487000-j1/tmdb-movies-agent-git'
-- '--region=us-central1'
-- '--allow-unauthenticated'
-- '--port=8080'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/augmented-atom-487000-j1/movie-agent', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/augmented-atom-487000-j1/movie-agent']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'movie-agent'
+      - '--image=gcr.io/augmented-atom-487000-j1/movie-agent'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'
+      - '--port=8080'
